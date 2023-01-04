@@ -7,15 +7,17 @@ import {
     ScanStatus,
     WechatyBuilder,
     Message,
-
+    Friendship,
 } from 'wechaty'
 
 import { PuppetPadlocal } from "wechaty-puppet-padlocal";
 // 引入axios
 import axios, { Axios } from 'axios';
 import { Contact } from 'wechaty-puppet/types';
-// import { MessageType } from 'message-type';
-import { FileBox } from 'file-box'
+
+import { FileBox } from 'file-box';
+// import { FriendshipType } from 'wechaty-puppet/dist/esm/src/schemas/friendship';
+
 
 
 
@@ -25,10 +27,23 @@ const puppet = new PuppetPadlocal({
 })
 
 
+// 定义一个从字符串中截取链接的方法
+function getUrl(str: string) {
+    const reg = /(https?|http|ftp|file):\/\/[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]/g;
+    const strValue = str.match(reg);
+    if (strValue && strValue.length > 0) {
+        return strValue[0];
+    }
+    return '';
+}
+
 let imgUrl = '';
 let videoUrl = '';
 let singContent = '';
 let musicContent = '';
+let isRoom = false;  //  闲聊模式的开关 默认为关闭
+let renjian = '';
+var TextImg = '';
 
 
 // 随机图片
@@ -83,6 +98,31 @@ function RandomMusic() {
         })
 }
 
+// 我在人间凑数
+function OnEarth() {
+    axios.get('http://hbkgds.com/api/renjian.php')
+        .then(function (response) {
+            renjian = response.data;
+        })
+        .catch(function (error) {
+            // handle error
+            console.log(error);
+        })
+}
+
+//生成发光字
+function LuminousWord(id: string, msg: string) {
+    axios.get('http://hbkgds.com/api/jqwjp.php?id=' + id + '&msg=' + msg)
+        .then(function (response) {
+            let url = response.data
+            TextImg = getUrl(url)
+        })
+        .catch(function (error) {
+            // handle error
+            console.log(error);
+        })
+}
+
 async function onMessage(message: Message) {
 
     try {
@@ -110,17 +150,29 @@ async function onMessage(message: Message) {
         // }
 
 
+        // 功能菜单
+        if (content === '菜单' || content === '功能') {
+            message.say('[' + sender + ']: ' + content + '\n'
+                + '-------------------------' + '\n'
+                + '[1].随机图片(口令:随机图片)' + '\n'
+                + '[2].美女视频(口令:美女视频)' + '\n'
+                + '[3].随机唱鸭(口令:随机唱鸭)' + '\n'
+                + '[4].网易云随机歌曲(口令:网易云随机歌曲)' + '\n'
+                + '[5].听香水有毒(口令:我想听香水有毒)' + '\n'
+                + '[6].闲聊模式(口令:开启/关闭闲聊模式 在群里默认为关闭)' + '\n'
+                + '[7].我在人间凑数语录(口令:我在人间凑数)' + '\n'
+                + '[8].发光字生成(示例: 发光字生成+1+苏羽很帅)' + '\n'
+                + '介绍:{1.手写荧光字 2.手写火焰字 3.手写炫彩字' + '\n'
+                + '4.连笔荧光字 5.连笔火焰字 6.连笔黑色字' + '\n'
+                + '7.连笔玉雕字 8.连笔刻雕字 9.艺术花鸟签}' + '\n'
+                + '.......更多功能，敬请期待！' + '\n')
+            return;
+        }
 
-
-        // if (room && mentionSelf) {
-        //     if (/句子互动/.test(content)) {
-        //         await room?.say('666')
-        //         return
-        //     }
-        // }
 
         if (content == '随机图片') {
             RandomPicture();
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
             setTimeout(() => {
                 if (imgUrl !== '') {
                     // 图片大小建议不要超过 2 M
@@ -130,7 +182,7 @@ async function onMessage(message: Message) {
                     // const fileBox = FileBox.fromFile("https://.../image.jpeg");
                     message.say(fileBox);
                 } else {
-                    message.say('请求超时')
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时')
                 }
             }, 4000)
             return;
@@ -138,13 +190,13 @@ async function onMessage(message: Message) {
 
         if (content == '美女视频') {
             RandomVideo();
-            message.say('正在获取中,请稍后....');
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
             const Video_Timer = setTimeout(() => {
                 if (videoUrl === '') {
-                    message.say('请求超时,请尝试重新发送!')
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时,请尝试重新发送!')
                     clearInterval(VideoTimer)
                 }
-            }, 20000)  // 15秒钟后没获取到链接 清楚定时器
+            }, 20000)  // 20秒钟后没获取到链接 清楚定时器
 
             const VideoTimer = setInterval(() => {
                 if (videoUrl !== '') {
@@ -160,10 +212,10 @@ async function onMessage(message: Message) {
 
         if (content == '随机唱鸭' || content == '随机唱呀') {
             RandomSing();
-            message.say('正在获取中,请稍后....');
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
             const sing_Timer = setTimeout(() => {
                 if (singContent === '') {
-                    message.say('请求超时,请尝试重新发送!')
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时,请尝试重新发送!')
                     clearInterval(singTimer)
                 }
             }, 10000)  // 10秒钟后没获取到链接 清楚定时器
@@ -180,10 +232,10 @@ async function onMessage(message: Message) {
 
         if (content == '网易云随机歌曲') {
             RandomMusic();
-            message.say('正在获取中,请稍后....');
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
             const music_Timer = setTimeout(() => {
                 if (musicContent === '') {
-                    message.say('请求超时,请尝试重新发送!')
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时,请尝试重新发送!')
                     clearInterval(musicTimer)
                 }
             }, 10000)  // 10秒钟后没获取到链接 清楚定时器
@@ -212,25 +264,89 @@ async function onMessage(message: Message) {
             return;
         }
 
-        // 进入机器人聊天
-        axios.get('https://api.a20safe.com/api.php?api=33&key=093fd4ec53ad156c68c1ecabcfa399d3&text=' + content)
-            .then(function (response) {
-                botmess = response.data.data[0].content
-            })
-            .catch(function (error) {
-                // handle error
-                console.log(error);
-            })
+        if (content === '我在人间凑数') {
+            OnEarth();
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
+            setTimeout(() => {
+                if (renjian !== '') {
+                    message.say(renjian);
+                } else {
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时')
+                }
+            }, 4000)
+            return;
+        }
 
-
-        setTimeout(() => {
-            if (botmess !== '') {
-                message.say(botmess)
+        let valueText = content.split('+')
+        if (valueText[0] === '发光字生成' && /^[1-9]+$/.test(valueText[1]) && valueText[2] !== undefined) {
+            if (parseInt(valueText[1]) > 0 && parseInt(valueText[1]) < 10) {
+                message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在生成中，请稍后...')
+                LuminousWord(valueText[1], valueText[2]);
+                setTimeout(() => {
+                    if (/^https?:\/\/(.+\/)+.+(\.(gif|png|jpg|jpeg|webp|svg|psd|bmp|tif))$/i.test(TextImg)) {
+                        // 图片大小建议不要超过 2 M
+                        const imageFilePath = TextImg;
+                        const fileBox = FileBox.fromUrl(imageFilePath);
+                        message.say(fileBox);
+                    } else {
+                        message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时')
+                    }
+                }, 4000)
+                return;
             } else {
-                message.say('你有病哦！')
+                message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '口令错误,序号范围在1-9之间，请重新输入！')
             }
-        }, 4000)
+        }
 
+
+
+        // 判断消息是否在群里
+        if (room) {
+            if (content === '开启闲聊模式') {
+                isRoom = true // 开启
+                message.say("闲聊模式开启成功！")
+                return;
+            } else if (content === '关闭闲聊模式') {
+                isRoom = false  // 关闭
+                message.say("闲聊模式关闭成功！")
+                return;
+            }
+
+            // 判断 闲聊模式开关是否开启
+            if (isRoom === true) {
+                feifei();
+                return;
+            } else {
+                return;
+            }
+        }
+
+
+
+        feifei();
+
+
+        // 进入机器人聊天
+        function feifei() {
+            axios.get('https://api.a20safe.com/api.php?api=33&key=093fd4ec53ad156c68c1ecabcfa399d3&text=' + content)
+                .then(function (response) {
+                    botmess = response.data.data[0].content
+                })
+                .catch(function (error) {
+                    // handle error
+                    console.log(error);
+                })
+
+
+            setTimeout(() => {
+                if (botmess !== '') {
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + botmess)
+                } else {
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时！')
+                }
+            }, 4000)
+
+        }
 
     } catch (e) {
         console.error(e)
@@ -241,7 +357,7 @@ async function onMessage(message: Message) {
 const bot = WechatyBuilder.build({
     name: "PadLocalDemo",
     puppet,
-})
+})   // 获取登录二维码
     .on("scan", (qrcode, status) => {
         if (status === ScanStatus.Waiting && qrcode) {
             const qrcodeImageUrl = [
@@ -256,17 +372,22 @@ const bot = WechatyBuilder.build({
             log.info(`onScan: ${ScanStatus[status]}(${status})`);
         }
     })
-
+    // 登录成功后 事件
     .on("login", (user) => {
         log.info(`${user} login`);
     })
-
+    // 注销登录
     .on("logout", (user, reason) => {
         log.info(`${user} logout, reason: ${reason}`);
     })
-
+    // 监听消息事件
     .on('message', onMessage)
-
+    // 监听好友请求 并自动通过
+    .on("friendship", async (friendship: Friendship) => {
+        // if (friendship.type() === FriendshipType.Receive) {
+        await friendship.accept();
+        // }
+    });
 
 bot.start().then(() => {
     log.info("started.");
