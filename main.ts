@@ -134,7 +134,7 @@ async function onMessage(message: Message) {
         const sender = message.talker()  // 获取消息发送者
         const content = message.text()   // 获取消息的内容
         let botmess = ""
-        const mentionSelf = await message.mentionSelf()    // 获取机器人是否在群里被@ 了
+        // const mentionSelf = await message.mentionSelf()    // 获取机器人是否在群里被@ 了
 
 
 
