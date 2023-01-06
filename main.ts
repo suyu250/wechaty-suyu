@@ -15,8 +15,11 @@ import { PuppetPadlocal } from "wechaty-puppet-padlocal";
 import axios, { Axios } from 'axios';
 import { Contact } from 'wechaty-puppet/types';
 
+
 import { FileBox } from 'file-box';
-// import { FriendshipType } from 'wechaty-puppet/dist/esm/src/schemas/friendship';
+import * as PUPPET from 'wechaty-puppet'
+
+
 
 
 
@@ -143,12 +146,12 @@ async function onMessage(message: Message) {
             return
         }
 
-        // 获取撤回的信息
-        // if (message.type() === MessageType.Recalled) {
-        //     const recalledMessage = await message.toRecalled()
-        //     message.say(`Message: ${sender} 撤回了一条消息. 内容为：${recalledMessage}`)
-        // }
 
+        // 获取撤回消息的文本内容
+        if (message.type() === PUPPET.types.Message.Recalled) {
+            const recalledMessage = await message.toRecalled()
+            console.log(`${sender}撤回了一条消息,内容为:${recalledMessage}`)
+        }
 
         // 功能菜单
         if (content === '菜单' || content === '功能') {
@@ -168,7 +171,6 @@ async function onMessage(message: Message) {
                 + '.......更多功能，敬请期待！' + '\n')
             return;
         }
-
 
         if (content == '随机图片') {
             RandomPicture();
@@ -300,7 +302,7 @@ async function onMessage(message: Message) {
 
 
 
-        // 判断消息是否在群里
+        //判断消息是否在群里
         if (room) {
             if (content === '开启闲聊模式') {
                 isRoom = true // 开启
@@ -320,6 +322,16 @@ async function onMessage(message: Message) {
                 return;
             }
         }
+
+        // if (room) {
+        //     if (mentionSelf) {
+
+        //         feifei();
+        //         return;
+        //     } else {
+        //         return;
+        //     }
+        // }
 
 
 
@@ -344,7 +356,7 @@ async function onMessage(message: Message) {
                 } else {
                     message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时！')
                 }
-            }, 4000)
+            }, 5000)
 
         }
 
@@ -384,9 +396,9 @@ const bot = WechatyBuilder.build({
     .on('message', onMessage)
     // 监听好友请求 并自动通过
     .on("friendship", async (friendship: Friendship) => {
-        // if (friendship.type() === FriendshipType.Receive) {
-        await friendship.accept();
-        // }
+        if (friendship.type() === PUPPET.types.Friendship.Receive) {
+            await friendship.accept();
+        }
     });
 
 bot.start().then(() => {
