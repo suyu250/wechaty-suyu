@@ -47,6 +47,7 @@ let musicContent = '';
 let isRoom = false;  //  闲聊模式的开关 默认为关闭
 let renjian = '';
 var TextImg = '';
+let tempMessage = '';   // 临时存消息
 
 
 // 随机图片
@@ -135,6 +136,8 @@ async function onMessage(message: Message) {
         let botmess = ""
         const mentionSelf = await message.mentionSelf()    // 获取机器人是否在群里被@ 了
 
+
+
         // 判断联系人类型是否为公众号(不回复公众号的消息)
         if (sender.type() === bot.Contact.Type.Official) {
             return
@@ -149,10 +152,12 @@ async function onMessage(message: Message) {
 
         // 获取撤回消息的文本内容
         if (message.type() === PUPPET.types.Message.Recalled) {
-            const recalledMessage = await message.toRecalled()
-            console.log(`${sender}撤回了一条消息,内容为:${recalledMessage}`)
+            // const recalledMessage = await message.toRecalled()
+            message.say(`${sender}撤回了一条消息,内容为:${tempMessage}`)
+            return;
         }
 
+        tempMessage = content;
         // 功能菜单
         if (content === '菜单' || content === '功能') {
             message.say('[' + sender + ']: ' + content + '\n'
