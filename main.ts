@@ -18,15 +18,12 @@ import { Contact } from 'wechaty-puppet/types';
 
 import { FileBox } from 'file-box';
 import * as PUPPET from 'wechaty-puppet'
-
-
-
-
+import { run } from './index.js';
 
 
 // 这里填写申请的token
 const puppet = new PuppetPadlocal({
-    token: "puppet_padlocal_9e40ee64a59e498f8670854843913b1c"
+    token: "puppet_padlocal_73a2fea2f69e4a42a27bdd2a4abe8f27"
 })
 
 
@@ -41,14 +38,17 @@ function getUrl(str: string) {
 }
 
 let imgUrl = '';
+let buyerImg = '';
 let videoUrl = '';
 let singContent = '';
-let musicContent = '';
+let musicUrl = '';
+let musicName = '';
 let isRoom = false;  //  闲聊模式的开关 默认为关闭
 let renjian = '';
 var TextImg = '';
 let tempMessage = '';   // 临时存消息
-
+let Msg = '';   // 小人举牌
+let chatgpt = false;
 
 // 随机图片
 function RandomPicture() {
@@ -62,12 +62,37 @@ function RandomPicture() {
         })
 }
 
+// 随机买家秀
+function BuyerShow() {
+    axios.get('http://www.plapi.cc/api/mjx.php')
+        .then(function (response) {
+            buyerImg = response.data
+            console.log(response.data)
+        })
+        .catch(function (error) {
+            // handle error
+            console.log(error);
+        })
+}
+
+// 举牌
+function Placards(msg: string) {
+    axios.get('http://www.plapi.cc/api/acard.php?msg=' + msg)
+        .then(function (response) {
+            Msg = response.data
+        })
+        .catch(function (error) {
+            // handle error
+            console.log(error);
+        })
+}
+
 // 美女视频
 function RandomVideo() {
-    axios.get('http://hbkgds.com/api/jiepai.php')
+    axios.get('https://v.api.aa1.cn/api/api-dy-girl/index.php?aa1=json')
         .then(function (response) {
-            let video = response.data.split('🗽视频：')
-            videoUrl = video[1]
+            videoUrl = response.data.mp4
+            // videoUrl = video[1]
         })
         .catch(function (error) {
             // handle error
@@ -77,10 +102,10 @@ function RandomVideo() {
 
 // 随机唱鸭
 function RandomSing() {
-    axios.get('http://api1.duozy.cn/api/changya.php')
+    axios.get('http://www.plapi.cc/api/changya.php')
         .then(function (response) {
-            let sing = response.data.split('━━━━━━━━━')
-            singContent = sing[1]
+            let sing = response.data
+            singContent = sing
         })
         .catch(function (error) {
             // handle error
@@ -91,10 +116,12 @@ function RandomSing() {
 
 // 网易云随机歌曲
 function RandomMusic() {
-    axios.get('http://api1.duozy.cn/api/neran.php')
+    axios.get('https://api.uomg.com/api/rand.music?sort=热歌榜&format=json')
         .then(function (response) {
-            let music = response.data.split('━━━━━━━━━')
-            musicContent = music[1]
+            let music_name = response.data.data.name
+            let music_url = response.data.data.url
+            musicName = music_name
+            musicUrl = music_url
         })
         .catch(function (error) {
             // handle error
@@ -113,6 +140,7 @@ function OnEarth() {
             console.log(error);
         })
 }
+
 
 //生成发光字
 function LuminousWord(id: string, msg: string) {
@@ -157,19 +185,22 @@ async function onMessage(message: Message) {
             return;
         }
 
+
         tempMessage = content;
         // 功能菜单
         if (content === '菜单' || content === '功能') {
             message.say('[' + sender + ']: ' + content + '\n'
                 + '-------------------------' + '\n'
-                + '[1].随机图片(口令:随机图片)' + '\n'
-                + '[2].美女视频(口令:美女视频)' + '\n'
-                + '[3].随机唱鸭(口令:随机唱鸭)' + '\n'
-                + '[4].网易云随机歌曲(口令:网易云随机歌曲)' + '\n'
-                + '[5].听香水有毒(口令:我想听香水有毒)' + '\n'
-                + '[6].闲聊模式(口令:开启/关闭闲聊模式 在群里默认为关闭)' + '\n'
-                + '[7].我在人间凑数语录(口令:我在人间凑数)' + '\n'
-                + '[8].发光字生成(示例: 发光字生成+1+苏羽很帅)' + '\n'
+                + '❤️[1].随机图片(口令👉:随机图片)' + '\n'
+                + '❤️[2].美女视频(口令👉:美女视频)' + '\n'
+                + '❤️[3].买家秀(口令👉:美女视频)' + '\n'
+                + '❤️[4].随机唱鸭(口令👉:随机唱鸭)' + '\n'
+                + '❤️[5].网易云随机歌曲(口令👉:网易云随机歌曲)' + '\n'
+                + '❤️[6].听香水有毒(口令👉:我想听香水有毒)' + '\n'
+                + '❤️[7].闲聊模式(口令👉:开启/关闭闲聊模式 在群里默认为关闭)' + '\n'
+                + '❤️[8].我在人间凑数语录(口令👉:我在人间凑数)' + '\n'
+                + '❤️[9].举牌生成(示例👉:举牌生成+苏羽)' + '\n'
+                + '❤️[10].发光字生成(示例👉: 发光字生成+1+苏羽很帅)' + '\n'
                 + '介绍:{1.手写荧光字 2.手写火焰字 3.手写炫彩字' + '\n'
                 + '4.连笔荧光字 5.连笔火焰字 6.连笔黑色字' + '\n'
                 + '7.连笔玉雕字 8.连笔刻雕字 9.艺术花鸟签}' + '\n'
@@ -195,6 +226,25 @@ async function onMessage(message: Message) {
             return;
         }
 
+
+        if (content == '买家秀') {
+            BuyerShow();
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
+            setTimeout(() => {
+                if (buyerImg !== '') {
+                    // 图片大小建议不要超过 2 M
+                    const imageFilePath = buyerImg;
+                    const fileBox = FileBox.fromUrl(imageFilePath);
+
+                    // const fileBox = FileBox.fromFile("https://.../image.jpeg");
+                    message.say(fileBox);
+                } else {
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时')
+                }
+            }, 4000)
+            return;
+        }
+
         if (content == '美女视频') {
             RandomVideo();
             message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
@@ -207,8 +257,11 @@ async function onMessage(message: Message) {
 
             const VideoTimer = setInterval(() => {
                 if (videoUrl !== '') {
-                    const videoFilePath = videoUrl;
-                    const fileBox = FileBox.fromUrl(videoFilePath);
+                    const videoFilePath = 'https:' + videoUrl;
+                    // 因为这个接口里面有中文不能直接访问，所以要用encodeURI方法进行url编码
+                    const videoFilePath2 = encodeURI(videoFilePath);
+                    const fileBox = FileBox.fromUrl(videoFilePath2);
+                    console.log(videoFilePath2);
                     message.say(fileBox);
                     clearInterval(VideoTimer);
                     clearTimeout(Video_Timer);
@@ -225,7 +278,7 @@ async function onMessage(message: Message) {
                     message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时,请尝试重新发送!')
                     clearInterval(singTimer)
                 }
-            }, 10000)  // 10秒钟后没获取到链接 清楚定时器
+            }, 20000)  // 10秒钟后没获取到链接 清楚定时器
 
             const singTimer = setInterval(() => {
                 if (singContent !== '') {
@@ -241,15 +294,15 @@ async function onMessage(message: Message) {
             RandomMusic();
             message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在获取中,请稍后....');
             const music_Timer = setTimeout(() => {
-                if (musicContent === '') {
+                if (musicUrl === '') {
                     message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时,请尝试重新发送!')
                     clearInterval(musicTimer)
                 }
             }, 10000)  // 10秒钟后没获取到链接 清楚定时器
 
             const musicTimer = setInterval(() => {
-                if (musicContent !== '') {
-                    message.say(musicContent);
+                if (musicUrl !== '') {
+                    message.say('歌曲名:' + musicName + '\n' + '歌曲链接:' + musicUrl);
                     clearInterval(musicTimer);
                     clearTimeout(music_Timer);
                 }
@@ -305,12 +358,37 @@ async function onMessage(message: Message) {
             }
         }
 
+        if (valueText[0] === '举牌生成' && valueText[1] !== undefined) {
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '正在生成中，请稍后...')
+            Placards(valueText[1]);
+            const pla_timer = setTimeout(() => {
+                if (Msg === '') {
+                    message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + '请求超时');
+                    clearInterval(plaTimer);
+                }
+            }, 15000)
+
+            const plaTimer = setInterval(() => {
+                if (Msg !== '') {
+                    clearInterval(plaTimer);
+                    clearTimeout(pla_timer);
+                    // 图片大小建议不要超过 2 M
+                    const imageFilePath = Msg;
+                    const fileBox = FileBox.fromUrl(imageFilePath);
+                    message.say(fileBox);
+                }
+            }, 2000)
+
+            return;
+        }
+
 
 
         //判断消息是否在群里
         if (room) {
             if (content === '开启闲聊模式') {
                 isRoom = true // 开启
+                chatgpt = false
                 message.say("闲聊模式开启成功！")
                 return;
             } else if (content === '关闭闲聊模式') {
@@ -319,9 +397,26 @@ async function onMessage(message: Message) {
                 return;
             }
 
+            if (content === '开启chatgpt模式') {
+                chatgpt = true // 开启
+                isRoom = false
+                message.say("chatgpt模式开启成功！")
+                return;
+            } else if (content === '关闭chatgpt模式') {
+                chatgpt = false  // 关闭
+                message.say("chatgpt模式关闭成功！")
+                return;
+            }
+
             // 判断 闲聊模式开关是否开启
             if (isRoom === true) {
                 feifei();
+                return;
+            }
+            // 判断 ChatGPT模式开关是否开启
+            if (chatgpt === true) {
+                let TextContent = run(content);
+                message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + TextContent);
                 return;
             } else {
                 return;
