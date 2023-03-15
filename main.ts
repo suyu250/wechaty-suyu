@@ -17,14 +17,14 @@ import { Contact } from 'wechaty-puppet/types';
 
 
 import { FileBox } from 'file-box';
-import * as PUPPET from 'wechaty-puppet'
-import { run } from './index.js';
-
+import * as PUPPET from 'wechaty-puppet';
+import * as puppeteer from 'puppeteer';
 
 // 这里填写申请的token
 const puppet = new PuppetPadlocal({
     token: "puppet_padlocal_73a2fea2f69e4a42a27bdd2a4abe8f27"
 })
+
 
 
 // 定义一个从字符串中截取链接的方法
@@ -191,6 +191,7 @@ async function onMessage(message: Message) {
         if (content === '菜单' || content === '功能') {
             message.say('[' + sender + ']: ' + content + '\n'
                 + '-------------------------' + '\n'
+                + '❤️[🏵️🏵️🏵️].chatGPT模式(口令🆙:开启/关闭chatGPT模式 默认为关闭)' + '\n'
                 + '❤️[1].随机图片(口令👉:随机图片)' + '\n'
                 + '❤️[2].美女视频(口令👉:美女视频)' + '\n'
                 + '❤️[3].买家秀(口令👉:美女视频)' + '\n'
@@ -415,8 +416,8 @@ async function onMessage(message: Message) {
             }
             // 判断 ChatGPT模式开关是否开启
             if (chatgpt === true) {
-                let TextContent = run(content);
-                message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + TextContent);
+                message.say("正在加急调用chatGPT Ai 引擎，请耐性等待....")
+                run(content);
                 return;
             } else {
                 return;
@@ -459,6 +460,47 @@ async function onMessage(message: Message) {
             }, 5000)
 
         }
+
+        // 模拟人工打开国内的chatgpt方法，从中获取结果
+        async function run(constText: string) {
+            const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+
+            await page.goto('https://www.chat2ai.cn/');
+
+            const inputSelector = 'input#input'; // 输入框的CSS选择器
+            const inputContent = constText; // 要输入的内容
+
+            await page.waitForSelector(inputSelector); // 等待输入框出现
+            await page.type(inputSelector, inputContent); // 在输入框中输入内容
+
+            const submitSelector = '.send'; // 提交按钮的CSS选择器
+            await Promise.all([
+                // page.waitForNavigation(), // 等待页面跳转完成
+                page.click(submitSelector), // 点击提交按钮
+            ]);
+
+            const resultSelector = 'li.completion span'; // 返回结果的CSS选择器
+            const shengcheng = 'button.btn-response'; // 生成按钮
+
+            // page.waitForFunction用这个方法来检测该网站中的一个元素，因为该网站返回的结果是逐字生成的，所以很难能让它返回出完整的答案。
+            // 通过检测 停止/重新生成按钮，来判断它是否已经生成玩了，如果变成了"重新生成"， 说明答案已经生成完了，可以保证返回答案的完整性。
+            await page.waitForFunction(
+                (selector: string) =>
+                    (document.querySelector(selector) as HTMLElement).innerText === '重新生成',
+                {},
+                shengcheng,
+            );
+
+            // 获取返回结果的文本内容
+            const result = await page.$$eval(resultSelector, (elements) => {
+                return elements.map((el) => el.innerText).join('');
+            });
+
+            message.say('[' + sender + ']: ' + content + '\n' + '-------------------------' + '\n' + result);
+            await browser.close();
+        }
+
 
     } catch (e) {
         console.error(e)

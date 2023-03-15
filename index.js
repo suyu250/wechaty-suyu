@@ -38,4 +38,4 @@ async function run(constText) {
 }
 
 
-export { run };
+export default run;
