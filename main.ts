@@ -22,7 +22,7 @@ import * as puppeteer from 'puppeteer';
 
 // 这里填写申请的token
 const puppet = new PuppetPadlocal({
-    token: "puppet_padlocal_73a2fea2f69e4a42a27bdd2a4abe8f27"
+    token: ""
 })
 
 
